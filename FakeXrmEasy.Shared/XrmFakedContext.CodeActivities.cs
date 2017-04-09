@@ -65,6 +65,10 @@ namespace FakeXrmEasy
             WorkflowInvoker invoker = null;
             WorkflowInstanceExtensionManager mngr = null;
             string sDebug = "";
+
+            //Check that all of the Entity Reference Parameters
+            VerifyProperEntityTypes<T>(inputs);
+
             try
             {
                 sDebug = "Creating instance..." + System.Environment.NewLine;
@@ -100,6 +104,32 @@ namespace FakeXrmEasy
             {
                 var typeName = tlex.TypeName != null ? tlex.TypeName : "(null)";
                 throw new TypeLoadException("When loading type: " + typeName + "." + tlex.Message + "in domain directory: " + AppDomain.CurrentDomain.BaseDirectory + "Debug=" + sDebug);
+            }
+        }
+
+        /// <summary>
+        /// Checks that all of the Entity Reference InArguments for a workflow are recieving the entity type specified
+        /// </summary>
+        /// <typeparam name="T">The code activity</typeparam>
+        /// <param name="inputs">A dictionary of parameters that will be passed into the code activity</param>
+        /// <remarks>Throws an exception if the passed in entity type is different than the expected</remarks>
+        private void VerifyProperEntityTypes<T>(Dictionary<string,object> inputs)
+        {
+            //Check that the inputs match the codeactivity
+            foreach (var property in typeof(T).GetProperties())
+            {
+                foreach (var attribute in property.GetCustomAttributes(false))
+                {
+                    //Check that the reference stored in a in argument matches the expected type
+                    if (attribute is ReferenceTargetAttribute && property.PropertyType == typeof(InArgument<EntityReference>) && inputs.ContainsKey(property.Name))
+                    {
+                        ReferenceTargetAttribute target = (ReferenceTargetAttribute)attribute;
+                        if (((EntityReference)inputs[property.Name]).LogicalName != target.EntityName)
+                        {
+                            throw new ArgumentException($"Argument {property.Name} is not of the required entity type {target.EntityName}");
+                        }
+                    }
+                }
             }
         }
 

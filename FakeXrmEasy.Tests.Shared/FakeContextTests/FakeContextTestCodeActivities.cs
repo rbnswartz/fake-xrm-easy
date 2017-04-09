@@ -121,6 +121,17 @@ namespace FakeXrmEasy.Tests
             Assert.True(((string)result["MessageName"]).Equals("Update"));
         }
 
-        
+        [Fact]
+        public void When_executing_a_custom_workflow_activity_with_wrong_entity_types_an_exception_is_raised()
+        {
+            XrmFakedContext context = new XrmFakedContext();
+
+            var inputs = new Dictionary<string, object>()
+            {
+                { "inputEntity",new EntityReference("contact",Guid.NewGuid()) }
+            };
+            ArgumentException exception = Assert.Throws<ArgumentException>(() => context.ExecuteCodeActivity<CreateTaskActivity>(inputs));
+            Assert.True(exception.Message.Length > 0);
+        }
     }
 }
